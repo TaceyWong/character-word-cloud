@@ -1,4 +1,5 @@
 import os
+import sys
 import wx
 import wx.adv
 import wx.lib.dialogs
@@ -43,7 +44,7 @@ class ImageShowDialog ( wx.Dialog ):
 class MainFrame ( wx.Frame ):
 
 	def __init__( self, parent ):
-		wx.Frame.__init__ ( self, parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 600,1000 ), style = wx.CLOSE_BOX|wx.MINIMIZE_BOX|wx.RESIZE_BORDER|wx.TAB_TRAVERSAL )
+		super().__init__ (parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 600,1000 ), style = wx.CLOSE_BOX|wx.MINIMIZE_BOX|wx.RESIZE_BORDER|wx.TAB_TRAVERSAL )
 		self.mask_ori_path = "data/images/遮罩.png"
 		self.mask_path = "data/images/遮罩.png"
 		self.wc_path = "data/images/词云.png"
@@ -406,6 +407,7 @@ class MainFrame ( wx.Frame ):
 		pass
 
 	def init_font_list(self):
+		return
 		from collections import OrderedDict
 		from matplotlib import font_manager
 		from fontTools.ttLib import TTFont
@@ -640,18 +642,19 @@ class MainFrame ( wx.Frame ):
 
 
 class CharacterWordCloudAPP(wx.App):
-    def OnInit(self):
-        # 界面语言设置为中文
-        self.locale = wx.Locale(wx.LANGUAGE_CHINESE_CHINA)
-        self.win = MainFrame(parent=None)
-        self.SetTopWindow(self.win)
-        self.win.SetTitle("Character Word Cloud v0.1.0 ❤ By Tacey Wong")
-        self.win.SetIcon(wx.Icon("data/images/icon.png"))
-        self.win.Show(True)
-        return True
+	def OnInit(self):
+		if sys.platform != "darwin": # Mac不能设置
+			# 界面语言设置为中文
+			self.locale = wx.Locale(wx.LANGUAGE_CHINESE_CHINA)
+		self.win = MainFrame(parent=None)
+		self.SetTopWindow(self.win)
+		self.win.SetTitle("Character Word Cloud v0.1.0 ❤ By Tacey Wong")
+		self.win.SetIcon(wx.Icon("data/images/icon.png"))
+		self.win.Show(True)
+		return True
 
-    def OnExit(self):
-        exit()
+	def OnExit(self):
+		exit()
 
 
 if __name__ == '__main__':
