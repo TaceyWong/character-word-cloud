@@ -1,9 +1,12 @@
 import os
 import sys
+import threading
+import traceback
 import wx
 import wx.adv
 import wx.lib.dialogs
 from wx_helper import *
+from core import resource_path, setup_model_home, model_file_ready
 
 
 
@@ -45,9 +48,9 @@ class MainFrame ( wx.Frame ):
 
 	def __init__( self, parent ):
 		super().__init__ (parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 600,1000 ), style = wx.CLOSE_BOX|wx.MINIMIZE_BOX|wx.RESIZE_BORDER|wx.TAB_TRAVERSAL )
-		self.mask_ori_path = "data/images/遮罩.png"
-		self.mask_path = "data/images/遮罩.png"
-		self.wc_path = "data/images/词云.png"
+		self.mask_ori_path = resource_path('data', 'images', '遮罩.png')
+		self.mask_path = resource_path('data', 'images', '遮罩.png')
+		self.wc_path = resource_path('data', 'images', '词云.png')
 		self.wc = None
 		self.mask = None
 		self.SetSizeHints( wx.DefaultSize, wx.DefaultSize )
@@ -58,28 +61,28 @@ class MainFrame ( wx.Frame ):
 		self.menubar = wx.MenuBar( 0 )
 		self.program_menu = wx.Menu()
 		self.refresh_menuItem = wx.MenuItem( self.program_menu, wx.ID_ANY, "刷新", wx.EmptyString, wx.ITEM_NORMAL )
-		self.refresh_menuItem.SetBitmap( wx.Bitmap( "data/images/刷新.png", wx.BITMAP_TYPE_ANY ) )
+		self.refresh_menuItem.SetBitmap( wx.Bitmap( resource_path('data', 'images', '刷新.png'), wx.BITMAP_TYPE_ANY ) )
 		self.program_menu.Append( self.refresh_menuItem )
 
 		self.exit_menuItem = wx.MenuItem( self.program_menu, wx.ID_ANY, "退出", wx.EmptyString, wx.ITEM_NORMAL )
-		self.exit_menuItem.SetBitmap( wx.Bitmap( "data/images/exit.png", wx.BITMAP_TYPE_ANY ) )
+		self.exit_menuItem.SetBitmap( wx.Bitmap( resource_path('data', 'images', 'exit.png'), wx.BITMAP_TYPE_ANY ) )
 		self.program_menu.Append( self.exit_menuItem )
 
 		self.menubar.Append( self.program_menu, "程序" )
 
 		self.help_menu = wx.Menu()
 		self.doc_menuItem = wx.MenuItem( self.help_menu, wx.ID_ANY, "使用文档", wx.EmptyString, wx.ITEM_NORMAL )
-		self.doc_menuItem.SetBitmap( wx.Bitmap( "data/images/问号.png", wx.BITMAP_TYPE_ANY ) )
+		self.doc_menuItem.SetBitmap( wx.Bitmap( resource_path('data', 'images', '问号.png'), wx.BITMAP_TYPE_ANY ) )
 		self.help_menu.Append( self.doc_menuItem )
 
 		self.update_menuItem = wx.MenuItem( self.help_menu, wx.ID_ANY, "更新", wx.EmptyString, wx.ITEM_NORMAL )
-		self.update_menuItem.SetBitmap( wx.Bitmap( "data/images/更新.png", wx.BITMAP_TYPE_ANY ) )
+		self.update_menuItem.SetBitmap( wx.Bitmap( resource_path('data', 'images', '更新.png'), wx.BITMAP_TYPE_ANY ) )
 		self.help_menu.Append( self.update_menuItem )
 
 		self.help_menu.AppendSeparator()
 
 		self.about_menuItem = wx.MenuItem( self.help_menu, wx.ID_ANY, "关于", wx.EmptyString, wx.ITEM_NORMAL )
-		self.about_menuItem.SetBitmap( wx.Bitmap( "data/images/关于.png", wx.BITMAP_TYPE_ANY ) )
+		self.about_menuItem.SetBitmap( wx.Bitmap( resource_path('data', 'images', '关于.png'), wx.BITMAP_TYPE_ANY ) )
 		self.help_menu.Append( self.about_menuItem )
 
 		self.menubar.Append( self.help_menu, "帮助" )
@@ -92,7 +95,7 @@ class MainFrame ( wx.Frame ):
 
 		self.start_button = wx.Button( self, wx.ID_ANY, "生成词云", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.start_button.SetBitmap( wx.Bitmap( "data/images/启动.png", wx.BITMAP_TYPE_ANY ) )
+		self.start_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', '启动.png'), wx.BITMAP_TYPE_ANY ) )
 		action_sizer.Add( self.start_button, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
 
 		self.start_staticline = wx.StaticLine( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
@@ -106,7 +109,7 @@ class MainFrame ( wx.Frame ):
 
 		self.select_mask_button = wx.Button( input_sizer.GetStaticBox(), wx.ID_ANY, "选择遮罩层图片", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.select_mask_button.SetBitmap( wx.Bitmap( "data/images/mask.png", wx.BITMAP_TYPE_ANY ) )
+		self.select_mask_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', 'mask.png'), wx.BITMAP_TYPE_ANY ) )
 		input_main_sizer.Add( self.select_mask_button, 1, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		self.mask_path_text = wx.TextCtrl( input_sizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_READONLY )
@@ -114,7 +117,7 @@ class MainFrame ( wx.Frame ):
 
 		self.select_stop_button = wx.Button( input_sizer.GetStaticBox(), wx.ID_ANY, "选择停用词文件", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.select_stop_button.SetBitmap( wx.Bitmap( "data/images/stop.png", wx.BITMAP_TYPE_ANY ) )
+		self.select_stop_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', 'stop.png'), wx.BITMAP_TYPE_ANY ) )
 		input_main_sizer.Add( self.select_stop_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT, 5 )
 
 		self.stop_path_text = wx.TextCtrl( input_sizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_READONLY )
@@ -122,7 +125,7 @@ class MainFrame ( wx.Frame ):
 
 		self.select_text_button = wx.Button( input_sizer.GetStaticBox(), wx.ID_ANY, "选择纯文本文件", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.select_text_button.SetBitmap( wx.Bitmap( "data/images/txt.png", wx.BITMAP_TYPE_ANY ) )
+		self.select_text_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', 'txt.png'), wx.BITMAP_TYPE_ANY ) )
 		input_main_sizer.Add( self.select_text_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT, 5 )
 
 		self.text_path_text = wx.TextCtrl( input_sizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_READONLY )
@@ -130,7 +133,7 @@ class MainFrame ( wx.Frame ):
 
 		self.select_freq_button = wx.Button( input_sizer.GetStaticBox(), wx.ID_ANY, "选择自频次文件", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.select_freq_button.SetBitmap( wx.Bitmap( "data/images/频次.png", wx.BITMAP_TYPE_ANY ) )
+		self.select_freq_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', '频次.png'), wx.BITMAP_TYPE_ANY ) )
 		input_main_sizer.Add( self.select_freq_button, 0, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		self.freq_path_text = wx.TextCtrl( input_sizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.TE_READONLY )
@@ -199,7 +202,7 @@ class MainFrame ( wx.Frame ):
 
 		out_main_sizer.Add( self.select_bg_color_label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT, 5 )
 
-		self.bg_color_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( "data/images/background-color.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.bg_color_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( resource_path('data', 'images', 'background-color.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
 		out_main_sizer.Add( self.bg_color_bitmap, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		self.bg_color_picker = wx.ColourPickerCtrl( out_sizer.GetStaticBox(), wx.ID_ANY, wx.WHITE, wx.DefaultPosition, wx.DefaultSize, wx.CLRP_DEFAULT_STYLE )
@@ -210,7 +213,7 @@ class MainFrame ( wx.Frame ):
 
 		# out_main_sizer.Add( self.select_text_color_label, 0, wx.ALL|wx.ALIGN_RIGHT|wx.ALIGN_CENTER_VERTICAL, 5 )
 
-		# self.text_color_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( "data/images/字体颜色.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
+		# self.text_color_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( resource_path('data', 'images', '字体颜色.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
 		# out_main_sizer.Add( self.text_color_bitmap, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		# self.text_color_picker = wx.ColourPickerCtrl( out_sizer.GetStaticBox(), wx.ID_ANY, wx.BLACK, wx.DefaultPosition, wx.DefaultSize, wx.CLRP_DEFAULT_STYLE )
@@ -221,7 +224,7 @@ class MainFrame ( wx.Frame ):
 
 		out_main_sizer.Add( self.select_font_label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT, 5 )
 
-		self.font_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( "data/images/字体.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.font_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( resource_path('data', 'images', '字体.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
 		out_main_sizer.Add( self.font_bitmap, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		self.font_choiceChoices = []
@@ -233,7 +236,7 @@ class MainFrame ( wx.Frame ):
 
 		out_main_sizer.Add( self.max_word_num_label, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_RIGHT, 5 )
 
-		self.max_word_num_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( "data/images/数目.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.max_word_num_bitmap = wx.StaticBitmap( out_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( resource_path('data', 'images', '数目.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.DefaultSize, 0 )
 		out_main_sizer.Add( self.max_word_num_bitmap, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		self.max_word_num_spin = wx.SpinCtrl( out_sizer.GetStaticBox(), wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, wx.SP_ARROW_KEYS, 10, 10000, 200 )
@@ -295,14 +298,14 @@ class MainFrame ( wx.Frame ):
 
 		self.open_ori_big_button = wx.Button( ori_preview_sizer.GetStaticBox(), wx.ID_ANY, u"查看大图", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.open_ori_big_button.SetBitmap( wx.Bitmap( "data/images/放大镜.png", wx.BITMAP_TYPE_ANY ) )
+		self.open_ori_big_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', '放大镜.png'), wx.BITMAP_TYPE_ANY ) )
 		self.open_ori_big_button.Disable()
 		ori_preview_sizer.Add( self.open_ori_big_button, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
 
 		self.m_staticline1 = wx.StaticLine( ori_preview_sizer.GetStaticBox(), wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, wx.LI_HORIZONTAL )
 		ori_preview_sizer.Add( self.m_staticline1, 0, wx.EXPAND |wx.ALL, 5 )
 
-		self.ori_preview_bitmap = wx.StaticBitmap( ori_preview_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( "data/images/原始.png", wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.Size( 200,200 ), 0 )
+		self.ori_preview_bitmap = wx.StaticBitmap( ori_preview_sizer.GetStaticBox(), wx.ID_ANY, wx.Bitmap( resource_path('data', 'images', '原始.png'), wx.BITMAP_TYPE_ANY ), wx.DefaultPosition, wx.Size( 200,200 ), 0 )
 		ori_preview_sizer.Add( self.ori_preview_bitmap, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
 
 
@@ -316,13 +319,13 @@ class MainFrame ( wx.Frame ):
 
 		self.open_mask_big_button = wx.Button( mask_preview_sizer.GetStaticBox(), wx.ID_ANY, "查看大图", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.open_mask_big_button.SetBitmap( wx.Bitmap( "data/images/放大镜.png", wx.BITMAP_TYPE_ANY ) )
+		self.open_mask_big_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', '放大镜.png'), wx.BITMAP_TYPE_ANY ) )
 		self.open_mask_big_button.Disable()
 		fmask_preview_btn_sizer.Add( self.open_mask_big_button, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		self.save_mask_button = wx.Button( mask_preview_sizer.GetStaticBox(), wx.ID_ANY, "保存大图", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.save_mask_button.SetBitmap( wx.Bitmap( "data/images/保存.png", wx.BITMAP_TYPE_ANY ) )
+		self.save_mask_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', '保存.png'), wx.BITMAP_TYPE_ANY ) )
 		self.save_mask_button.Disable()
 		fmask_preview_btn_sizer.Add( self.save_mask_button, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
@@ -346,13 +349,13 @@ class MainFrame ( wx.Frame ):
 
 		self.open_wc_big_button = wx.Button( wc_preview_sizer.GetStaticBox(), wx.ID_ANY, "查看大图", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.open_wc_big_button.SetBitmap( wx.Bitmap( "data/images/放大镜.png", wx.BITMAP_TYPE_ANY ) )
+		self.open_wc_big_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', '放大镜.png'), wx.BITMAP_TYPE_ANY ) )
 		self.open_wc_big_button.Disable()
 		wc_preview_btn_sizer.Add( self.open_wc_big_button, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL|wx.ALIGN_CENTER_VERTICAL, 5 )
 
 		self.save_wc_button = wx.Button( wc_preview_sizer.GetStaticBox(), wx.ID_ANY, "保存大图", wx.DefaultPosition, wx.DefaultSize, 0 )
 
-		self.save_wc_button.SetBitmap( wx.Bitmap( "data/images/保存.png", wx.BITMAP_TYPE_ANY ) )
+		self.save_wc_button.SetBitmap( wx.Bitmap( resource_path('data', 'images', '保存.png'), wx.BITMAP_TYPE_ANY ) )
 		self.save_wc_button.Disable()
 		wc_preview_btn_sizer.Add( self.save_wc_button, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
 
@@ -407,12 +410,11 @@ class MainFrame ( wx.Frame ):
 		pass
 
 	def init_font_list(self):
-		return
 		from collections import OrderedDict
 		from matplotlib import font_manager
 		from fontTools.ttLib import TTFont
 		self.font_map = OrderedDict()
-		self.font_map["汉仪书简"] = "data/fonts/hysj.ttf"
+		self.font_map["汉仪书简"] = resource_path('data', 'fonts', 'hysj.ttf')
 		en_cn_map = {
 			"KaiTi":"楷体","SimHei":"黑体","SimSun":"宋体","FangSong":"仿宋",
 			"SimSun-ExtB":"新宋体","DengXian":"等线",
@@ -449,7 +451,7 @@ class MainFrame ( wx.Frame ):
 	def about_menuItemOnMenuSelection( self, event ):
 		event.Skip()
 		info = wx.adv.AboutDialogInfo()
-		info.SetIcon(wx.Icon('data/images/icon.png', wx.BITMAP_TYPE_PNG))
+		info.SetIcon(wx.Icon(resource_path('data', 'images', 'icon.png'), wx.BITMAP_TYPE_PNG))
 		info.SetName('CharacterWordCloud')
 		info.SetVersion('0.1.0')
 		info.SetDescription('词云.')
@@ -474,11 +476,9 @@ class MainFrame ( wx.Frame ):
 		if not self.check():return
 		from core import generate_mask,generate_stopwords,word_cut,generate_wordcloud
 
-		dlg = wx.ProgressDialog("词云生成中","正在生成Mask...",maximum = 3,parent=self,
-                               style = 0 | wx.PD_APP_MODAL |wx.PD_AUTO_HIDE)
 		mask_ori_path = self.mask_path_text.GetValue()
 		colored = self.colored_check.GetValue()
-		model = self.model_choice.GetStringSelection().split("(")[0]
+		model = self.model_choice.GetStringSelection().split("(")[0].strip()
 		kw = {}
 		kw["max_font_size"] = self.max_font_size_spin.GetValue()
 		kw["min_font_size"] = self.min_font_size_spin.GetValue()
@@ -499,32 +499,79 @@ class MainFrame ( wx.Frame ):
 		kw["include_numbers"] = False
 		kw["min_word_length"] = 0
 		print(kw)
-		if mask_ori_path:
-			self.mask_path,self.mask = generate_mask(mask_ori_path,False,model)
-			bitmap = wx.Bitmap(self.mask_path,wx.BITMAP_TYPE_ANY)
-			self.mask_preview_bitmap.SetBitmap(wx_scale_bitmap(bitmap,200,200))
-		wx.Yield()
-		dlg.Update(1,"Mask生成完成;正在进行分词...")
-		stopwords_paths = self.stop_path_text.GetValue().split("\x01")
-		kw["stopwords"] = generate_stopwords(stopwords_paths) if stopwords_paths else set()
-		text = word_cut(self.text_path_text.GetValue().split("\x01"))
-		wx.Yield()
-		dlg.Update(2,"中文分词完成;正在进行词云生成...")
-		self.wc_path,self.wc = generate_wordcloud(text=text,
-											mask_path=self.mask_path,
-											colored=colored,**kw)
-		bitmap = wx.Bitmap(self.wc_path,wx.BITMAP_TYPE_ANY)
-		self.wc_preview_bitmap.SetBitmap(wx_scale_bitmap(bitmap,200,200))
+
+		need_download = bool(mask_ori_path) and not model_file_ready(model)
+		if need_download:
+			first_msg = "首次使用，正在下载模型（需访问 GitHub，请保持 VPN）..."
+		else:
+			first_msg = "正在加载本地模型并生成 Mask（首次加载可能需几十秒）..."
+		self.start_button.Disable()
+		dlg = wx.ProgressDialog(
+			"词云生成中",
+			first_msg,
+			maximum=3,
+			parent=self,
+			style=wx.PD_APP_MODAL | wx.PD_AUTO_HIDE | wx.PD_ELAPSED_TIME,
+		)
+
+		text_paths = self.text_path_text.GetValue().split("\x01")
+		stop_paths = self.stop_path_text.GetValue().split("\x01")
+
+		def work():
+			try:
+				mask_path = self.mask_path
+				mask_img = self.mask
+				if mask_ori_path:
+					wx.CallAfter(dlg.Pulse, first_msg)
+					mask_path, mask_img = generate_mask(mask_ori_path, False, model)
+					wx.CallAfter(self._apply_mask_preview, mask_path, mask_img)
+				wx.CallAfter(dlg.Update, 1, "Mask 完成；正在分词...")
+				stopwords = generate_stopwords(stop_paths) if stop_paths else set()
+				kw["stopwords"] = stopwords
+				text = word_cut(text_paths)
+				wx.CallAfter(dlg.Update, 2, "分词完成；正在生成词云...")
+				wc_path, wc = generate_wordcloud(
+					text=text, mask_path=mask_path, colored=colored, **kw
+				)
+				wx.CallAfter(self._apply_wc_preview, wc_path, wc)
+				wx.CallAfter(dlg.Update, 3, "词云生成完成")
+				wx.CallAfter(self._finish_generate, dlg, None)
+			except Exception as e:
+				traceback.print_exc()
+				wx.CallAfter(self._finish_generate, dlg, e)
+
+		threading.Thread(target=work, daemon=True).start()
+
+	def _apply_mask_preview(self, mask_path, mask_img):
+		self.mask_path = mask_path
+		self.mask = mask_img
+		bitmap = wx.Bitmap(self.mask_path, wx.BITMAP_TYPE_ANY)
+		self.mask_preview_bitmap.SetBitmap(wx_scale_bitmap(bitmap, 200, 200))
+		self.open_mask_big_button.Enable()
+		self.save_mask_button.Enable()
+
+	def _apply_wc_preview(self, wc_path, wc):
+		self.wc_path = wc_path
+		self.wc = wc
+		bitmap = wx.Bitmap(self.wc_path, wx.BITMAP_TYPE_ANY)
+		self.wc_preview_bitmap.SetBitmap(wx_scale_bitmap(bitmap, 200, 200))
 		self.open_wc_big_button.Enable()
 		self.save_wc_button.Enable()
-		wx.Yield()
-		dlg.Update(3,"词云生成完成")
-		dlg.Destroy()
+
+	def _finish_generate(self, dlg, error):
+		try:
+			if dlg:
+				dlg.Destroy()
+		except Exception:
+			pass
+		self.start_button.Enable()
+		if error:
+			wx.MessageBox(f"生成失败：{error}", "错误", wx.OK | wx.ICON_ERROR)
 
 	def select_mask_buttonOnButtonClick( self, event ):
 		wildcard = wildcard = "图片 (*.jpeg,*.jpg,*.png,*.bmp)|*.jpeg;*.jpg;*.png;*.bmp"
 		dlg = wx.FileDialog(self, message="选取遮罩图片",
-            defaultDir=os.path.join(os.path.dirname(__file__),"data/demo"),
+            defaultDir=resource_path('data', 'demo'),
             defaultFile="leijun.jpeg",
             wildcard=wildcard,
             style=wx.FD_OPEN | wx.FD_CHANGE_DIR  |  wx.FD_FILE_MUST_EXIST
@@ -541,7 +588,7 @@ class MainFrame ( wx.Frame ):
 	def select_stop_buttonOnButtonClick( self, event ):
 		wildcard = "TXT纯文本 (*.txt)|*.txt"
 		dlg = wx.FileDialog(self, message="选取停词表文档(支持按Ctrl多选)",
-            defaultDir=os.path.join(os.path.dirname(__file__),"data/stop"),
+            defaultDir=resource_path('data', 'stop'),
             defaultFile="cn_stopwords.txt",
             wildcard=wildcard,
             style=wx.FD_OPEN | wx.FD_CHANGE_DIR  | wx.FD_MULTIPLE | wx.FD_FILE_MUST_EXIST
@@ -555,7 +602,7 @@ class MainFrame ( wx.Frame ):
 	def select_text_buttonOnButtonClick( self, event ):
 		wildcard = "TXT纯文本 (*.txt)|*.txt"
 		dlg = wx.FileDialog(self, message="选取数据文本文件(支持按Ctrl多选)",
-            defaultDir=os.path.join(os.path.dirname(__file__),"data/demo"),
+            defaultDir=resource_path('data', 'demo'),
             defaultFile="小米创业思考.txt",
             wildcard=wildcard,
             style=wx.FD_OPEN | wx.FD_CHANGE_DIR  | wx.FD_MULTIPLE | wx.FD_FILE_MUST_EXIST
@@ -643,13 +690,14 @@ class MainFrame ( wx.Frame ):
 
 class CharacterWordCloudAPP(wx.App):
 	def OnInit(self):
+		setup_model_home()
 		if sys.platform != "darwin": # Mac不能设置
 			# 界面语言设置为中文
 			self.locale = wx.Locale(wx.LANGUAGE_CHINESE_CHINA)
 		self.win = MainFrame(parent=None)
 		self.SetTopWindow(self.win)
 		self.win.SetTitle("Character Word Cloud v0.1.0 ❤ By Tacey Wong")
-		self.win.SetIcon(wx.Icon("data/images/icon.png"))
+		self.win.SetIcon(wx.Icon(resource_path('data', 'images', 'icon.png')))
 		self.win.Show(True)
 		return True
 

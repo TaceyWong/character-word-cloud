@@ -1,0 +1,10 @@
+wxPython
+Pillow
+numpy
+matplotlib
+fonttools
+wordcloud
+jieba
+rembg
+pymatting
+pyinstaller
