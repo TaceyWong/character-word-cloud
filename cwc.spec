@@ -34,6 +34,8 @@ hiddenimports = [
     "rembg.sessions.dis_general_use",
     "rembg.sessions.dis_anime",
     "pymatting",
+    "numba",
+    "llvmlite",
     "matplotlib",
     "matplotlib.font_manager",
     "fontTools",
@@ -49,8 +51,9 @@ hiddenimports = [
     "wx.lib.dialogs",
 ]
 
-# 不要 collect_all(onnxruntime / pymatting)：体积膨胀且易带上 numba/llvmlite(~115MB)
-for pkg in ("jieba", "rembg", "wordcloud", "matplotlib"):
+# 不要 collect_all(onnxruntime)：CUDA/transformers 会撑爆体积并导致卡死
+# pymatting 依赖 numba/llvmlite，必须打进包
+for pkg in ("jieba", "rembg", "wordcloud", "matplotlib", "pymatting", "numba", "llvmlite"):
     try:
         d, b, h = collect_all(pkg)
         datas += d
@@ -59,7 +62,7 @@ for pkg in ("jieba", "rembg", "wordcloud", "matplotlib"):
     except Exception:
         pass
 
-for pkg in ("pymatting", "rembg", "pooch", "onnxruntime", "numpy", "Pillow", "scipy"):
+for pkg in ("pymatting", "rembg", "pooch", "onnxruntime", "numpy", "Pillow", "scipy", "numba", "llvmlite"):
     try:
         datas += copy_metadata(pkg)
     except Exception:
@@ -124,21 +127,14 @@ def _is_gpu_ort_binary(dest_name: str) -> bool:
 
 
 def _is_bloat_path(dest_name: str) -> bool:
-    """去掉非默认模型、测试数据、numba/llvmlite 等大块。"""
+    """去掉非默认模型、测试/示例数据等大块（保留 numba/llvmlite）。"""
     n = dest_name.lower().replace("\\", "/")
-    if n.endswith(".onnx") and "/u2net/u2net.onnx" not in n and not n.endswith("u2net/u2net.onnx"):
-        # 只保留默认 u2net.onnx；其它 onnx 不打进包
-        if "/models/" in n or n.endswith(".onnx"):
-            # 允许路径里带 u2net
-            parts = n.replace("\\", "/").split("/")
-            if "u2net" in parts and parts[-1] == "u2net.onnx":
-                return False
-            return True
+    if n.endswith(".onnx"):
+        parts = n.split("/")
+        if "u2net" in parts and parts[-1] == "u2net.onnx":
+            return False
+        return True
     bloat_dirs = (
-        "/llvmlite/",
-        "/numba/",
-        "/numba.libs/",
-        "/llvmlite.libs/",
         "/matplotlib/mpl-data/sample_data/",
         "/matplotlib/tests/",
         "/scipy/tests/",
@@ -165,8 +161,6 @@ a = Analysis(
         "torch",
         "torchvision",
         "tensorflow",
-        "numba",
-        "llvmlite",
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,

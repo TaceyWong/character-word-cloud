@@ -32,6 +32,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+!cwc.spec
 
 # Installer logs
 pip-log.txt
@@ -127,3 +128,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# rembg model weights（单文件 >100MB，不可提交到 GitHub）
+data/model/**/*.onnx
+data/model/**/*.bin
+data/model/models/
+
+# runtime log next to exe / project
+cwc.log
